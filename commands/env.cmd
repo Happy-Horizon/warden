@@ -179,22 +179,6 @@ TRAEFIK_ADDRESS="$(docker container inspect traefik \
 )"
 export TRAEFIK_ADDRESS;
 
-if [[ $OSTYPE =~ ^darwin ]]; then
-    export MUTAGEN_SYNC_FILE="${WARDEN_DIR}/environments/${WARDEN_ENV_TYPE}/${WARDEN_ENV_TYPE}.mutagen.yml"
-
-    if [[ -f "${WARDEN_HOME_DIR}/environments/${WARDEN_ENV_TYPE}/${WARDEN_ENV_TYPE}.mutagen.yml" ]]; then
-        export MUTAGEN_SYNC_FILE="${WARDEN_HOME_DIR}/environments/${WARDEN_ENV_TYPE}/${WARDEN_ENV_TYPE}.mutagen.yml"
-    fi
-
-    if [[ -f "${WARDEN_ENV_PATH}/.warden/environments/${WARDEN_ENV_TYPE}/${WARDEN_ENV_TYPE}.mutagen.yml" ]]; then
-        export MUTAGEN_SYNC_FILE="${WARDEN_ENV_PATH}/.warden/environments/${WARDEN_ENV_TYPE}/${WARDEN_ENV_TYPE}.mutagen.yml"
-    fi
-
-    if [[ -f "${WARDEN_ENV_PATH}/.warden/mutagen.yml" ]]; then
-        export MUTAGEN_SYNC_FILE="${WARDEN_ENV_PATH}/.warden/mutagen.yml"
-    fi
-fi
-
 ## pause mutagen sync if needed
 if [[ "${WARDEN_PARAMS[0]}" == "stop" ]] \
     && [[ $OSTYPE =~ ^darwin ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]]
