@@ -23,10 +23,15 @@ if [[ -f "${WARDEN_HOME_DIR}/.env" ]]; then
     eval "$(grep "^WARDEN_DNSMASQ_ENABLE" "${WARDEN_HOME_DIR}/.env")"
     # Check Portainer
     eval "$(grep "^WARDEN_PORTAINER_ENABLE" "${WARDEN_HOME_DIR}/.env")"
+
+    # Check Docker socket
+    eval "$(grep "^WARDEN_DOCKER_SOCK" "${WARDEN_HOME_DIR}/.env")"
+
     # Check PMA
     eval "$(grep "^WARDEN_PHPMYADMIN_ENABLE" "${WARDEN_HOME_DIR}/.env")"
 fi
 
+export WARDEN_DOCKER_SOCK="${WARDEN_DOCKER_SOCK:-/var/run/docker.sock}"
 DOCKER_COMPOSE_ARGS+=("-f")
 DOCKER_COMPOSE_ARGS+=("${WARDEN_DIR}/docker/docker-compose.mailpit.yml")
 
@@ -75,9 +80,14 @@ if [[ "${WARDEN_PARAMS[0]}" == "up" ]]; then
         "$WARDEN_BIN" sign-certificate "${WARDEN_SERVICE_DOMAIN}"
     fi
 
+    if [[ ! -d "${WARDEN_HOME_DIR}/etc/traefik" ]]; then
+        mkdir -p "${WARDEN_HOME_DIR}/etc/traefik"
+    fi
+
     ## copy configuration files into location where they'll be mounted into containers from
-    mkdir -p "${WARDEN_HOME_DIR}/etc/traefik"
-    cp "${WARDEN_DIR}/config/traefik/traefik.yml" "${WARDEN_HOME_DIR}/etc/traefik/traefik.yml"
+    if [[ ! -f "${WARDEN_HOME_DIR}/etc/traefik/traefik.yml" ]]; then
+        cp "${WARDEN_DIR}/config/traefik/traefik.yml" "${WARDEN_HOME_DIR}/etc/traefik/traefik.yml"
+    fi
 
     ## generate dynamic traefik ssl termination configuration
     cat > "${WARDEN_HOME_DIR}/etc/traefik/dynamic.yml" <<-EOT
@@ -114,6 +124,8 @@ if [[ "${WARDEN_PARAMS[0]}" == "up" ]]; then
     for network in $(docker network ls -f label=dev.warden.environment.name --format {{.Name}}); do
         connectPeeredServices "${network}"
     done
-fi
 
-regeneratePMAConfig
+    if [[ "${WARDEN_PHPMYADMIN_ENABLE}" == 1 ]]; then
+        regeneratePMAConfig
+    fi
+fi

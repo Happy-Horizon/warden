@@ -27,6 +27,8 @@ if [[ -f "${WARDEN_HOME_DIR}/.env" ]]; then
 fi
 export WARDEN_IMAGE_REPOSITORY="${WARDEN_IMAGE_REPOSITORY:-"docker.io/wardenenv"}"
 
+export WARDEN_DOCKER_USERNS_MODE="${WARDEN_DOCKER_USERNS_MODE:-host}"
+
 ## configure environment type defaults
 if [[ ${WARDEN_ENV_TYPE} =~ ^magento ]]; then
     export WARDEN_SVC_PHP_VARIANT=-${WARDEN_ENV_TYPE}
@@ -106,6 +108,9 @@ fi
 
 [[ ${WARDEN_REDIS} -eq 1 ]] \
     && appendEnvPartialIfExists "redis"
+
+[[ ${WARDEN_VALKEY:=0} -eq 1 ]] \
+    && appendEnvPartialIfExists "valkey"
 
 appendEnvPartialIfExists "${WARDEN_ENV_TYPE}"
 
@@ -197,7 +202,7 @@ export TRAEFIK_ADDRESS;
 
 ## pause mutagen sync if needed
 if [[ "${WARDEN_PARAMS[0]}" == "stop" ]] \
-    && [[ $OSTYPE =~ ^darwin ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]]
+    && [[ ${WARDEN_MUTAGEN_ENABLE} -eq 1 ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]]
 then
     $WARDEN_BIN sync pause
 fi
@@ -215,7 +220,7 @@ fi
 
 ## resume mutagen sync if available and php-fpm container id hasn't changed
 if { [[ "${WARDEN_PARAMS[0]}" == "up" ]] || [[ "${WARDEN_PARAMS[0]}" == "start" ]]; } \
-    && [[ $OSTYPE =~ ^darwin ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]] \
+    && [[ ${WARDEN_MUTAGEN_ENABLE} -eq 1 ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]] \
     && [[ $($WARDEN_BIN sync list | grep -ci 'Status: \[Paused\]' | awk '{print $1}') == "1" ]] \
     && [[ $($WARDEN_BIN env ps -q php-fpm) ]] \
     && [[ $(docker container inspect "$($WARDEN_BIN env ps -q php-fpm)" --format '{{ .State.Status }}') = "running" ]] \
@@ -224,7 +229,7 @@ then
     $WARDEN_BIN sync resume
 fi
 
-if [[ $OSTYPE =~ ^darwin ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]] # If we're using Mutagen
+if [[ ${WARDEN_MUTAGEN_ENABLE} -eq 1 ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]] # If we're using Mutagen
 then
   MUTAGEN_VERSION=$(mutagen version)
   CONNECTION_STATE_STRING='Connected state: Connected'
@@ -244,7 +249,7 @@ fi
 
 ## stop mutagen sync if needed
 if [[ "${WARDEN_PARAMS[0]}" == "down" ]] \
-    && [[ $OSTYPE =~ ^darwin ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]]
+    && [[ ${WARDEN_MUTAGEN_ENABLE} -eq 1 ]] && [[ -f "${MUTAGEN_SYNC_FILE}" ]]
 then
     $WARDEN_BIN sync stop
 fi
