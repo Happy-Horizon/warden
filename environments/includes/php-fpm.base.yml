@@ -30,6 +30,10 @@ services:
     volumes: *volumes
     extra_hosts: *extra_hosts
     userns_mode: ${WARDEN_DOCKER_USERNS_MODE:-host}
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
 
   php-debug:
     hostname: "${WARDEN_ENV_NAME}-php-debug"
@@ -47,6 +51,10 @@ services:
     volumes: *volumes
     extra_hosts: *extra_hosts
     userns_mode: ${WARDEN_DOCKER_USERNS_MODE:-host}
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     depends_on:
       - php-fpm
 volumes:
